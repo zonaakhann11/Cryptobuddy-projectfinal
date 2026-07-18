@@ -2,45 +2,32 @@
 
 Next-hour **BUY / SELL / HOLD** for BTC, ETH, SOL — **ML prediction + decision support** (educational; not financial advice).
 
-## Run
+## Quick start
 
-**Backend** (`:5000`):
+**Full clone / teammate instructions:** see **[SETUP_AND_RUN.md](SETUP_AND_RUN.md)** (point-by-point).
 
 ```powershell
-cd D:\CryptoBuddy-main\CryptoBuddy-main\backend
-.\venv\Scripts\Activate.ps1
+# Terminal 1 — API
+cd backend
+.\venv\Scripts\Activate.ps1   # first time: python -m venv venv && pip install -r requirements.txt
 python app.py
-```
 
-**Frontend** (`:5173`):
-
-```powershell
-cd D:\CryptoBuddy-main\CryptoBuddy-main\frontend
+# Terminal 2 — Dashboard
+cd frontend
+npm install                   # first time only
 .\start-dashboard.ps1
 ```
 
-Open http://127.0.0.1:5173 → select coin → **PREDICT**.
+Open http://127.0.0.1:5173 → **PREDICT**.
 
-## Layout
+## Docs
 
-| Path | Purpose |
+| File | Purpose |
 |------|---------|
-| `backend/` | Flask API, features, models, sentiment |
-| `backend/models/saved/` | Production models (live) |
-| `backend/models/saved_v2/` | Optional retrain candidates |
-| `backend/data/historical/*_hourly.csv` | OHLCV history |
-| `frontend/` | React dashboard |
-| `docs/FYP_REPORT_PACK.md` | SRS / SDS / results for the report |
-| `docs/REPORT_CHATGPT_BRIEF.md` | Prompt pack for writing the report |
-| `docs/STANDEE_DEMO.html` | Standee layout demo |
-| `experiments/` | Optional retrain (`train_final_v2.py`) + comparison CSV |
-| `scripts/` | PowerShell helpers for optional training |
-
-## Report
-
-Use **`docs/FYP_REPORT_PACK.md`** and **`docs/REPORT_CHATGPT_BRIEF.md`**.  
-Results snapshot: `experiments/results/final_model_comparison.csv`.
+| [SETUP_AND_RUN.md](SETUP_AND_RUN.md) | How anyone runs backend, frontend, predict, sentiment |
+| [docs/FYP_REPORT_PACK.md](docs/FYP_REPORT_PACK.md) | SRS / SDS / results for the report |
+| [docs/REPORT_CHATGPT_BRIEF.md](docs/REPORT_CHATGPT_BRIEF.md) | Prompt pack for writing the report |
 
 ## Note
 
-Production predictor: **Gradient Boosting**. Other models were compared; scores were similar (~38–44% balanced accuracy), so GB stayed live and the product focus is **decision support**.
+Production predictor: **Gradient Boosting (v1)**. `venv` and `node_modules` are **not** in Git — recreate them after clone (see SETUP_AND_RUN.md).
