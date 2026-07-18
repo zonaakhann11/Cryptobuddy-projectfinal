@@ -1,0 +1,87 @@
+@import url('@fontsource/inter/400.css');
+@import url('@fontsource/inter/500.css');
+@import url('@fontsource/inter/600.css');
+@import url('@fontsource/inter/700.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 217 33% 7%;
+    --foreground: 210 40% 98%;
+    --card: 217 28% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 217 28% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 20% 16%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 18% 14%;
+    --muted-foreground: 215 16% 65%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 0 0% 10%;
+    --border: 217 18% 18%;
+    --input: 217 18% 14%;
+    --ring: 217 91% 60%;
+    --radius: 1rem;
+    --sidebar-background: 217 33% 7%;
+    --sidebar-foreground: 215 16% 65%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 28% 11%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 18% 14%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+    background-color: #0b121e;
+  }
+}
+
+@layer components {
+  /* Plain CSS so cards still render even if a utility fails to generate */
+  .dash-panel {
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: #141c2b;
+    padding: 1.25rem;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  }
+
+  .glass-card {
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: #141c2b;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  }
+
+  .glow-border::before {
+    content: none;
+  }
+
+  .text-gradient {
+    color: #f8fafc;
+  }
+}

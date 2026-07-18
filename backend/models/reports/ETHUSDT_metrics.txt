@@ -1,0 +1,65 @@
+======================================================================
+MODEL TRAINING REPORT - ETHUSDT
+======================================================================
+
+DATASET
+----------------------------------------------------------------------
+Total rows:              77417
+Training set:            61933
+Test set:                15484
+Initial features:        61
+Features after filter:   21
+
+CLASS DISTRIBUTION
+----------------------------------------------------------------------
+SELL  (class 0):   28442 (36.74%)
+BUY   (class 1):   29464 (38.06%)
+HOLD  (class 2):   19511 (25.20%)
+
+HYPERPARAMETER SEARCH CONFIGURATION
+----------------------------------------------------------------------
+Model:                   GradientBoostingClassifier
+Search method:           RandomizedSearchCV
+n_iter (candidates):     15
+Cross-validation:        TimeSeriesSplit (n_splits=5)
+Total fits:              75 (15 × 5)
+Scoring metric:          f1_macro
+Class weighting:         balanced (sample_weight)
+n_jobs:                  1
+Random state:            42
+
+BEST PARAMETERS
+----------------------------------------------------------------------
+learning_rate            : 0.05
+max_depth                : 3
+min_samples_leaf         : 25
+n_estimators             : 100
+subsample                : 0.8
+
+EVALUATION METRICS
+----------------------------------------------------------------------
+Accuracy:                0.4011
+Balanced Accuracy:       0.4157
+Macro F1:                0.3991
+Weighted F1:             0.3954
+
+CLASSIFICATION REPORT
+----------------------------------------------------------------------
+              precision    recall  f1-score   support
+
+        SELL     0.4134    0.3072    0.3525      5518
+         BUY     0.4507    0.3622    0.4016      5765
+        HOLD     0.3595    0.5777    0.4432      4201
+
+    accuracy                         0.4011     15484
+   macro avg     0.4079    0.4157    0.3991     15484
+weighted avg     0.4127    0.4011    0.3954     15484
+
+CONFUSION MATRIX
+----------------------------------------------------------------------
+Rows: True class, Columns: Predicted class
+       SELL  BUY  HOLD
+SELL  [1695 1676 2147]
+BUY   [1500 2088 2177]
+HOLD  [ 905  869 2427]
+

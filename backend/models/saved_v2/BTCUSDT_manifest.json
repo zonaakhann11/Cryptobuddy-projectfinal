@@ -1,0 +1,9 @@
+{
+  "symbol": "BTCUSDT",
+  "model_name": "ExtraTrees",
+  "model_version": "v2",
+  "mode": "quick",
+  "n_features": 40,
+  "split": "60/20/20 chronological",
+  "random_state": 42
+}

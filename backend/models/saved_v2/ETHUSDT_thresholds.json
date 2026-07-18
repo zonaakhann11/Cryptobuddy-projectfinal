@@ -1,0 +1,15 @@
+{
+  "balanced": {
+    "buy_prob": 0.45,
+    "sell_prob": 0.45,
+    "buy_confirms": 1,
+    "sell_confirms": 2
+  },
+  "high_confidence": {
+    "buy_prob": 0.5,
+    "sell_prob": 0.45,
+    "buy_confirms": 1,
+    "sell_confirms": 3
+  },
+  "default_policy": "balanced"
+}

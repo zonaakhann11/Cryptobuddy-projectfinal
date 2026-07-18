@@ -1,0 +1,23 @@
+[
+  "atr_pct",
+  "high_low_range",
+  "return_2h",
+  "stoch_k",
+  "candle_body",
+  "return_3h",
+  "candle_upper_wick",
+  "price_vs_ema20",
+  "volume_zscore",
+  "return_6h",
+  "ema_cross",
+  "bb_width",
+  "return_1h",
+  "atr",
+  "momentum_agreement",
+  "volume",
+  "candle_lower_wick",
+  "return_24h",
+  "volatility_3h",
+  "price_vs_ema50",
+  "volatility_ratio"
+]

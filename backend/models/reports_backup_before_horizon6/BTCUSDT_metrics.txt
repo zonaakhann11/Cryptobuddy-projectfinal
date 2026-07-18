@@ -1,0 +1,54 @@
+Training Report for BTCUSDT
+======================================================================
+
+Low-memory training settings:
+  RandomizedSearchCV n_iter: 8
+  TimeSeriesSplit n_splits: 5
+  n_jobs: 1
+
+Feature List:
+  - open
+  - high
+  - low
+  - close
+  - volume
+  - rsi
+  - ema_20
+  - ema_50
+  - macd
+  - macd_signal
+  - return_1h
+  - return_3h
+  - return_6h
+  - volume_change
+  - rolling_volatility_6h
+  - high_low_range
+  - candle_body
+
+Best Parameters:
+  class_weight: balanced
+  max_depth: 8
+  max_features: log2
+  min_samples_leaf: 2
+  min_samples_split: 20
+  n_estimators: 100
+
+Test Set Performance:
+  Accuracy:    0.4410
+  Weighted F1: 0.4197
+
+Classification Report:
+              precision    recall  f1-score   support
+
+        SELL     0.3214    0.4205    0.3643      4228
+         BUY     0.4011    0.1617    0.2305      4489
+        HOLD     0.5321    0.6417    0.5818      6681
+
+    accuracy                         0.4410     15398
+   macro avg     0.4182    0.4080    0.3922     15398
+weighted avg     0.4361    0.4410    0.4197     15398
+
+Confusion Matrix:
+[[1778  571 1879]
+ [1873  726 1890]
+ [1881  513 4287]]

@@ -1,0 +1,54 @@
+Training Report for ETHUSDT
+======================================================================
+
+Low-memory training settings:
+  RandomizedSearchCV n_iter: 8
+  TimeSeriesSplit n_splits: 5
+  n_jobs: 1
+
+Feature List:
+  - open
+  - high
+  - low
+  - close
+  - volume
+  - rsi
+  - ema_20
+  - ema_50
+  - macd
+  - macd_signal
+  - return_1h
+  - return_3h
+  - return_6h
+  - volume_change
+  - rolling_volatility_6h
+  - high_low_range
+  - candle_body
+
+Best Parameters:
+  class_weight: balanced
+  max_depth: 8
+  max_features: log2
+  min_samples_leaf: 2
+  min_samples_split: 20
+  n_estimators: 100
+
+Test Set Performance:
+  Accuracy:    0.3967
+  Weighted F1: 0.3874
+
+Classification Report:
+              precision    recall  f1-score   support
+
+        SELL     0.3735    0.2857    0.3237      5223
+         BUY     0.4262    0.3367    0.3762      5400
+        HOLD     0.3920    0.5860    0.4698      4775
+
+    accuracy                         0.3967     15398
+   macro avg     0.3972    0.4028    0.3899     15398
+weighted avg     0.3977    0.3967    0.3874     15398
+
+Confusion Matrix:
+[[1492 1521 2210]
+ [1453 1818 2129]
+ [1050  927 2798]]

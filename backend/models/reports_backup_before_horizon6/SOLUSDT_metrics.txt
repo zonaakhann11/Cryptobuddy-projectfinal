@@ -1,0 +1,54 @@
+Training Report for SOLUSDT
+======================================================================
+
+Low-memory training settings:
+  RandomizedSearchCV n_iter: 8
+  TimeSeriesSplit n_splits: 5
+  n_jobs: 1
+
+Feature List:
+  - open
+  - high
+  - low
+  - close
+  - volume
+  - rsi
+  - ema_20
+  - ema_50
+  - macd
+  - macd_signal
+  - return_1h
+  - return_3h
+  - return_6h
+  - volume_change
+  - rolling_volatility_6h
+  - high_low_range
+  - candle_body
+
+Best Parameters:
+  class_weight: balanced
+  max_depth: 12
+  max_features: sqrt
+  min_samples_leaf: 1
+  min_samples_split: 5
+  n_estimators: 200
+
+Test Set Performance:
+  Accuracy:    0.3401
+  Weighted F1: 0.3195
+
+Classification Report:
+              precision    recall  f1-score   support
+
+        SELL     0.3924    0.2300    0.2900      3743
+         BUY     0.4162    0.2159    0.2843      3798
+        HOLD     0.2961    0.6740    0.4115      2647
+
+    accuracy                         0.3401     10188
+   macro avg     0.3683    0.3733    0.3286     10188
+weighted avg     0.3763    0.3401    0.3195     10188
+
+Confusion Matrix:
+[[ 861  758 2124]
+ [ 862  820 2116]
+ [ 471  392 1784]]

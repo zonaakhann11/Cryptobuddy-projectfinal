@@ -1,0 +1,77 @@
+{
+  "symbol": "ETHUSDT",
+  "model_name": "XGBoost",
+  "model_version": "v2",
+  "n_features": 60,
+  "random_state": 42,
+  "split": "60/20/20 chronological",
+  "label_threshold": 0.0015,
+  "horizon_hours": 1,
+  "metrics": {
+    "ternary_test": {
+      "accuracy": 0.39584402257567985,
+      "balanced_accuracy": 0.36825276831842263,
+      "macro_f1": 0.33950653049469687,
+      "weighted_f1": 0.35864026676152666
+    },
+    "selective_test": {
+      "balanced": {
+        "symbol": "ETHUSDT",
+        "policy": "balanced",
+        "buy_prob": 0.45,
+        "sell_prob": 0.45,
+        "buy_confirms": 1,
+        "sell_confirms": 2,
+        "n_obs": 15592,
+        "n_signals": 2812,
+        "n_hold": 12780,
+        "coverage_pct": 18.034889687018985,
+        "correct": 1277,
+        "incorrect": 1535,
+        "directional_accuracy": 0.4541251778093883,
+        "buy_accuracy": 0.45693678404751803,
+        "sell_accuracy": 0.43956043956043955,
+        "n_buy": 2357,
+        "n_sell": 455,
+        "ci95_low": 0.435797464637475,
+        "ci95_high": 0.47257806330415353
+      },
+      "high_confidence": {
+        "symbol": "ETHUSDT",
+        "policy": "high_confidence",
+        "buy_prob": 0.5,
+        "sell_prob": 0.45,
+        "buy_confirms": 1,
+        "sell_confirms": 3,
+        "n_obs": 15592,
+        "n_signals": 773,
+        "n_hold": 14819,
+        "coverage_pct": 4.95767060030785,
+        "correct": 360,
+        "incorrect": 413,
+        "directional_accuracy": 0.46571798188874514,
+        "buy_accuracy": 0.4608540925266904,
+        "sell_accuracy": 0.4786729857819905,
+        "n_buy": 562,
+        "n_sell": 211,
+        "ci95_low": 0.43080895721906687,
+        "ci95_high": 0.5009660661576422
+      }
+    }
+  },
+  "thresholds": {
+    "balanced": {
+      "buy_prob": 0.45,
+      "sell_prob": 0.45,
+      "buy_confirms": 1,
+      "sell_confirms": 2
+    },
+    "high_confidence": {
+      "buy_prob": 0.5,
+      "sell_prob": 0.45,
+      "buy_confirms": 1,
+      "sell_confirms": 3
+    },
+    "default_policy": "balanced"
+  }
+}

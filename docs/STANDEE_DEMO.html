@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CryptoBuddy — Classy FYP Standee</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #06101f;
+      --panel: #0c1a2e;
+      --panel-2: #12233a;
+      --gold: #f0c14b;
+      --gold-2: #ffe08a;
+      --cyan: #3dd6c6;
+      --text: #e8eef7;
+      --muted: #8fa3bd;
+      --line: rgba(240, 193, 75, 0.35);
+      --green: #3ecf8e;
+      --amber: #f5b942;
+      --red: #ff6b6b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Outfit", system-ui, sans-serif;
+      background: #111;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+    .hint {
+      max-width: 1280px;
+      width: 100%;
+      background: #222;
+      border: 1px solid #444;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      font-size: 0.88rem;
+      color: #ccc;
+      line-height: 1.45;
+    }
+    .hint b { color: var(--gold); }
+
+    /* Wide classy standee */
+    .board {
+      width: min(1280px, 100%);
+      background:
+        radial-gradient(ellipse 70% 50% at 15% 0%, rgba(61, 214, 198, 0.12), transparent 50%),
+        radial-gradient(ellipse 60% 45% at 90% 10%, rgba(240, 193, 75, 0.14), transparent 45%),
+        linear-gradient(145deg, #050d1a 0%, #0a1628 45%, #071221 100%);
+      border: 1px solid rgba(240, 193, 75, 0.28);
+      border-radius: 6px;
+      box-shadow: 0 30px 90px rgba(0,0,0,0.55);
+      overflow: hidden;
+      position: relative;
+    }
+    .board::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 100% 36px;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .pad {
+      position: relative;
+      z-index: 1;
+      padding: 1.4rem 1.5rem 1.1rem;
+    }
+
+    /* HEADER */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.85rem;
+    }
+    .topbar .code { color: var(--gold); font-weight: 700; }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 1.25rem;
+      align-items: end;
+      margin-bottom: 1.1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .hero-left .kicker {
+      color: var(--gold);
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .hero-left h1 {
+      font-family: "Syne", sans-serif;
+      font-size: clamp(2.6rem, 5vw, 3.6rem);
+      line-height: 0.92;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .hero-left h1 .g {
+      background: linear-gradient(90deg, var(--gold-2), var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero-left .tag {
+      margin-top: 0.55rem;
+      font-family: "Bebas Neue", sans-serif;
+      font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+      letter-spacing: 0.14em;
+    }
+    .hero-left .tag span { color: var(--gold); }
+    .hero-left .blurb {
+      margin-top: 0.65rem;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: #b8c7db;
+      max-width: 36rem;
+    }
+    .hero-left .blurb b { color: #fff; }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.55rem;
+    }
+    .hs {
+      background: linear-gradient(160deg, rgba(240,193,75,0.12), rgba(255,255,255,0.03));
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.85rem 0.5rem;
+      text-align: center;
+    }
+    .hs .n {
+      font-family: "Syne", sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .hs .l {
+      margin-top: 0.35rem;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      line-height: 1.25;
+    }
+
+    /* MAIN GRID */
+    .main {
+      display: grid;
+      grid-template-columns: 1.05fr 1.15fr 0.9fr;
+      gap: 0.9rem;
+      margin-bottom: 0.9rem;
+    }
+
+    .col-title {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 700;
+      margin-bottom: 0.55rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .col-title::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      background: var(--gold);
+      border-radius: 2px;
+      transform: rotate(45deg);
+    }
+
+    /* Architecture */
+    .arch {
+      background: rgba(12, 26, 46, 0.85);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 0.85rem;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 0.55rem;
+      margin-bottom: 0.55rem;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 0.9rem;
+      top: 2rem;
+      bottom: -0.35rem;
+      width: 2px;
+      background: linear-gradient(var(--gold), transparent);
+      opacity: 0.45;
+    }
+    .step .dot {
+      width: 1.85rem;
+      height: 1.85rem;
+      border-radius: 50%;
+      background: linear-gradient(145deg, var(--gold-2), var(--gold));
+      color: #0a1525;
+      font-weight: 800;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px rgba(240,193,75,0.35);
+    }
+    .step .body h4 {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.12rem;
+    }
+    .step .body p {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    /* In action */
+    .action {
+      background: rgba(12, 26, 46, 0.85);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+    }
+    th {
+      text-align: left;
+      color: var(--gold);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.3rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    td {
+      padding: 0.55rem 0.3rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: top;
+      color: #c5d0e0;
+      line-height: 1.3;
+    }
+    .asset { color: #fff; font-weight: 700; }
+    .pill-buy {
+      display: inline-block;
+      background: rgba(62,207,142,0.15);
+      color: var(--green);
+      border: 1px solid rgba(62,207,142,0.35);
+      border-radius: 999px;
+      padding: 0.12rem 0.5rem;
+      font-weight: 700;
+      font-size: 0.68rem;
+    }
+    .pill-hold {
+      display: inline-block;
+      background: rgba(245,185,66,0.15);
+      color: var(--amber);
+      border: 1px solid rgba(245,185,66,0.35);
+      border-radius: 999px;
+      padding: 0.12rem 0.5rem;
+      font-weight: 700;
+      font-size: 0.68rem;
+    }
+    .why { font-size: 0.68rem; color: #9eb3cc; }
+    .banner {
+      margin-top: auto;
+      margin-top: 0.75rem;
+      background: linear-gradient(90deg, rgba(240,193,75,0.18), rgba(61,214,198,0.1));
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.65rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: #f3e6c0;
+      text-align: center;
+    }
+
+    /* Right column */
+    .side {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+    .card {
+      background: rgba(12, 26, 46, 0.85);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 0.8rem;
+    }
+    .lift-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.8rem;
+    }
+    .lift-row:last-child { border-bottom: 0; }
+    .lift-row .coin { font-weight: 700; color: #fff; }
+    .lift-row .pct {
+      font-family: "Syne", sans-serif;
+      font-weight: 800;
+      color: var(--cyan);
+      font-size: 1.05rem;
+    }
+    .usp li {
+      list-style: none;
+      font-size: 0.74rem;
+      color: #b8c7db;
+      line-height: 1.35;
+      padding: 0.35rem 0 0.35rem 0.85rem;
+      position: relative;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .usp li:last-child { border-bottom: 0; }
+    .usp li::before {
+      content: "◆";
+      position: absolute;
+      left: 0;
+      color: var(--gold);
+      font-size: 0.55rem;
+      top: 0.55rem;
+    }
+    .usp li b { color: #fff; }
+
+    /* Dashboard visual */
+    .dash-wrap {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 0.9rem;
+      margin-bottom: 0.85rem;
+    }
+    .dash-shot {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: #0b121e;
+      position: relative;
+      min-height: 220px;
+    }
+    .dash-shot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      min-height: 220px;
+    }
+    .dash-shot .cap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 0.55rem 0.75rem;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      font-size: 0.72rem;
+      color: #dbe4f0;
+    }
+    .dash-shot .cap b { color: var(--gold); }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+    .fg {
+      background: rgba(18, 35, 58, 0.9);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 0.55rem 0.6rem;
+    }
+    .fg h5 {
+      font-size: 0.72rem;
+      color: var(--gold-2);
+      margin-bottom: 0.2rem;
+    }
+    .fg p {
+      font-size: 0.66rem;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    /* Footer */
+    .foot {
+      display: grid;
+      grid-template-columns: 1.2fr 1.4fr 0.8fr;
+      gap: 0.75rem;
+      align-items: center;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+    .tech {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+    .tech span {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.62rem;
+      color: #d0dbeb;
+    }
+    .names { color: #dbe4f0; font-weight: 600; line-height: 1.4; }
+    .disclaimer {
+      grid-column: 1 / -1;
+      text-align: center;
+      font-size: 0.58rem;
+      color: #6b7c94;
+      margin-top: 0.15rem;
+    }
+
+    @media (max-width: 980px) {
+      .hero, .main, .dash-wrap, .foot { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .hint { display: none; }
+      .board { border: none; box-shadow: none; width: 100%; max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="hint">
+    <b>Classy standee demo</b> — open this file (also copied to Desktop as
+    <code>CryptoBuddy_STANDEE_CLASSY.html</code>). Screenshot or Print→PDF for Canva.
+    Image beside it: <code>cryptobuddy-dashboard-standee.png</code>
+  </div>
+
+  <article class="board">
+    <div class="pad">
+      <div class="topbar">
+        <span>DHA Suffa University · Department of Computer Science</span>
+        <span class="code">Project P14F25</span>
+      </div>
+
+      <header class="hero">
+        <div class="hero-left">
+          <p class="kicker">AI Signal Intelligence · Decision Support</p>
+          <h1>CRYPTO<span class="g">BUDDY</span></h1>
+          <p class="tag">PREDICT LESS. <span>CONFIRM MORE.</span> DECIDE SMARTER.</p>
+          <p class="blurb">
+            An intelligent <b>next-hour</b> system for <b>BTC · ETH · SOL</b> that pairs machine learning
+            with a multi-layer confirmation &amp; sentiment engine — then explains every suggestion so
+            traders and learners can <b>decide with evidence</b>, not noise.
+          </p>
+        </div>
+        <div class="hero-stats">
+          <div class="hs"><div class="n">90+</div><div class="l">Features<br/>engineered</div></div>
+          <div class="hs"><div class="n">6</div><div class="l">Independent<br/>confirmations</div></div>
+          <div class="hs"><div class="n">1H</div><div class="l">Live market<br/>cycle</div></div>
+        </div>
+      </header>
+
+      <div class="main">
+        <!-- Architecture -->
+        <section class="arch">
+          <h2 class="col-title">System architecture</h2>
+          <div class="step">
+            <div class="dot">1</div>
+            <div class="body">
+              <h4>Live market intake</h4>
+              <p>Binance OHLCV · hourly candles · BTC / ETH / SOL</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot">2</div>
+            <div class="body">
+              <h4>Feature intelligence</h4>
+              <p>Momentum · trend · volatility · volume · market context</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot">3</div>
+            <div class="body">
+              <h4>ML prediction core</h4>
+              <p>Gradient Boosting → BUY / SELL / HOLD + class probabilities</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot">4</div>
+            <div class="body">
+              <h4>Confirmation engine</h4>
+              <p>6 technical checks · weak agreement forced to HOLD</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot">5</div>
+            <div class="body">
+              <h4>Sentiment &amp; risk layer</h4>
+              <p>Fear &amp; Greed (Alternative.me) · news RSS · risk keywords</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="dot">6</div>
+            <div class="body">
+              <h4>Decision-support dashboard</h4>
+              <p>Why · what would change · history · price zones · plain English</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- In action -->
+        <section class="action">
+          <h2 class="col-title">CryptoBuddy in action</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Suggestion</th>
+                <th>Checks</th>
+                <th>Why (decision support)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="asset">BTCUSDT</td>
+                <td><span class="pill-hold">HOLD</span></td>
+                <td>3/6</td>
+                <td class="why">Model lean mixed · volume not confirming · wait for clearer evidence</td>
+              </tr>
+              <tr>
+                <td class="asset">ETHUSDT</td>
+                <td><span class="pill-buy">BUY*</span></td>
+                <td>5/6</td>
+                <td class="why">Outlook BUY · trend + momentum agree · risk Low · still your call</td>
+              </tr>
+              <tr>
+                <td class="asset">SOLUSDT</td>
+                <td><span class="pill-hold">HOLD</span></td>
+                <td>2/6</td>
+                <td class="why">Insufficient confirmations · shows what’s missing for BUY/SELL</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="banner">
+            IF THE MARKET IS UNCERTAIN → CRYPTOBUDDY STAYS PATIENT.<br />
+            Better to miss a noisy trade than act without evidence.
+          </div>
+        </section>
+
+        <!-- Side -->
+        <aside class="side">
+          <div class="card">
+            <h2 class="col-title">Lift above random</h2>
+            <p style="font-size:0.68rem;color:var(--muted);margin:-0.2rem 0 0.45rem;line-height:1.3">
+              Balanced accuracy vs 33% three-class chance
+            </p>
+            <div class="lift-row"><span class="coin">BTC</span><span class="pct">+26%</span></div>
+            <div class="lift-row"><span class="coin">ETH</span><span class="pct">+23%</span></div>
+            <div class="lift-row"><span class="coin">SOL</span><span class="pct">+16%</span></div>
+          </div>
+          <div class="card">
+            <h2 class="col-title">Why it stands out</h2>
+            <ul class="usp">
+              <li><b>Decision support first</b> — not a blind “BUY now” bot</li>
+              <li><b>Selective signals</b> — low evidence → HOLD automatically</li>
+              <li><b>Explainable UI</b> — outlook vs suggestion, checks, Fear &amp; Greed history</li>
+              <li><b>Live intelligence</b> — Binance + news + Alternative.me</li>
+              <li><b>Laptop-ready</b> — no GPU cluster required</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+
+      <div class="dash-wrap">
+        <div class="dash-shot">
+          <img src="cryptobuddy-dashboard-standee.png" alt="CryptoBuddy dashboard preview" />
+          <div class="cap"><b>Live dashboard</b> — prediction · sentiment · evidence groups · decision support</div>
+        </div>
+        <div class="feature-grid">
+          <div class="fg">
+            <h5>Fear &amp; Greed intel</h5>
+            <p>Live Alternative.me gauge + now / yesterday / week / month history</p>
+          </div>
+          <div class="fg">
+            <h5>What would change?</h5>
+            <p>Shows exact conditions to unlock BUY or SELL from HOLD</p>
+          </div>
+          <div class="fg">
+            <h5>Signal memory</h5>
+            <p>Last predictions + what changed since your previous run</p>
+          </div>
+          <div class="fg">
+            <h5>Price zone context</h5>
+            <p>Nearby support / resistance + EMA path in plain English</p>
+          </div>
+        </div>
+      </div>
+
+      <footer class="foot">
+        <div>
+          <div><b style="color:#fff">Supervisor</b> Adnan Alam · Lecturer, DSU</div>
+          <div class="names" style="margin-top:0.25rem">
+            Dev Yogesh · Zona Khan · Mirza Omer Baig · Hattaf Ali
+          </div>
+        </div>
+        <div class="tech">
+          <span>Python</span><span>Scikit-learn</span><span>Flask</span><span>React</span>
+          <span>Pandas</span><span>Binance API</span><span>Alternative.me</span><span>VADER</span>
+        </div>
+        <div style="text-align:right">
+          <div style="color:var(--gold);font-weight:800;letter-spacing:0.12em;font-size:0.75rem">P14F25</div>
+          <div>Scan demo / report (add QR in Canva)</div>
+        </div>
+        <p class="disclaimer">
+          Educational decision-support system — not financial advice. Illustrative live rows may vary by market hour.
+        </p>
+      </footer>
+    </div>
+  </article>
+</body>
+</html>

@@ -1,0 +1,77 @@
+{
+  "symbol": "SOLUSDT",
+  "model_name": "GradientBoosting",
+  "model_version": "v2",
+  "n_features": 60,
+  "random_state": 42,
+  "split": "60/20/20 chronological",
+  "label_threshold": 0.0015,
+  "horizon_hours": 1,
+  "metrics": {
+    "ternary_test": {
+      "accuracy": 0.39271956856702617,
+      "balanced_accuracy": 0.3412851525954332,
+      "macro_f1": 0.2982726229066674,
+      "weighted_f1": 0.34260363770664404
+    },
+    "selective_test": {
+      "balanced": {
+        "symbol": "SOLUSDT",
+        "policy": "balanced",
+        "buy_prob": 0.45,
+        "sell_prob": 0.45,
+        "buy_confirms": 1,
+        "sell_confirms": 3,
+        "n_obs": 10384,
+        "n_signals": 491,
+        "n_hold": 9893,
+        "coverage_pct": 4.728428351309708,
+        "correct": 227,
+        "incorrect": 264,
+        "directional_accuracy": 0.4623217922606925,
+        "buy_accuracy": 0.4593967517401392,
+        "sell_accuracy": 0.48333333333333334,
+        "n_buy": 431,
+        "n_sell": 60,
+        "ci95_low": 0.41868381426728984,
+        "ci95_high": 0.5065447841367248
+      },
+      "high_confidence": {
+        "symbol": "SOLUSDT",
+        "policy": "high_confidence",
+        "buy_prob": 0.45,
+        "sell_prob": 0.5,
+        "buy_confirms": 1,
+        "sell_confirms": 3,
+        "n_obs": 10384,
+        "n_signals": 431,
+        "n_hold": 9953,
+        "coverage_pct": 4.150616332819722,
+        "correct": 198,
+        "incorrect": 233,
+        "directional_accuracy": 0.4593967517401392,
+        "buy_accuracy": 0.4593967517401392,
+        "sell_accuracy": NaN,
+        "n_buy": 431,
+        "n_sell": 0,
+        "ci95_low": 0.41291333969316996,
+        "ci95_high": 0.5065975810651016
+      }
+    }
+  },
+  "thresholds": {
+    "balanced": {
+      "buy_prob": 0.45,
+      "sell_prob": 0.45,
+      "buy_confirms": 1,
+      "sell_confirms": 3
+    },
+    "high_confidence": {
+      "buy_prob": 0.45,
+      "sell_prob": 0.5,
+      "buy_confirms": 1,
+      "sell_confirms": 3
+    },
+    "default_policy": "balanced"
+  }
+}

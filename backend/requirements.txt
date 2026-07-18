@@ -1,0 +1,13 @@
+pandas
+numpy
+requests
+ta
+scikit-learn==1.8.0
+xgboost
+lightgbm
+flask
+flask-cors
+feedparser
+vaderSentiment
+joblib
+pytest

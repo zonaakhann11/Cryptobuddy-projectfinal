@@ -1,0 +1,65 @@
+======================================================================
+MODEL TRAINING REPORT - BTCUSDT
+======================================================================
+
+DATASET
+----------------------------------------------------------------------
+Total rows:              77421
+Training set:            61936
+Test set:                15485
+Initial features:        61
+Features after filter:   33
+
+CLASS DISTRIBUTION
+----------------------------------------------------------------------
+SELL  (class 0):   25386 (32.79%)
+BUY   (class 1):   26517 (34.25%)
+HOLD  (class 2):   25518 (32.96%)
+
+HYPERPARAMETER SEARCH CONFIGURATION
+----------------------------------------------------------------------
+Model:                   GradientBoostingClassifier
+Search method:           RandomizedSearchCV
+n_iter (candidates):     15
+Cross-validation:        TimeSeriesSplit (n_splits=5)
+Total fits:              75 (15 × 5)
+Scoring metric:          f1_macro
+Class weighting:         balanced (sample_weight)
+n_jobs:                  1
+Random state:            42
+
+BEST PARAMETERS
+----------------------------------------------------------------------
+learning_rate            : 0.05
+max_depth                : 4
+min_samples_leaf         : 15
+n_estimators             : 100
+subsample                : 0.8
+
+EVALUATION METRICS
+----------------------------------------------------------------------
+Accuracy:                0.4428
+Balanced Accuracy:       0.4237
+Macro F1:                0.4114
+Weighted F1:             0.4221
+
+CLASSIFICATION REPORT
+----------------------------------------------------------------------
+              precision    recall  f1-score   support
+
+        SELL     0.3870    0.2608    0.3116      4739
+         BUY     0.4233    0.3136    0.3603      4872
+        HOLD     0.4715    0.6968    0.5624      5874
+
+    accuracy                         0.4428     15485
+   macro avg     0.4272    0.4237    0.4114     15485
+weighted avg     0.4305    0.4428    0.4221     15485
+
+CONFUSION MATRIX
+----------------------------------------------------------------------
+Rows: True class, Columns: Predicted class
+       SELL  BUY  HOLD
+SELL  [1236 1202 2301]
+BUY   [1057 1528 2287]
+HOLD  [ 901  880 4093]
+
