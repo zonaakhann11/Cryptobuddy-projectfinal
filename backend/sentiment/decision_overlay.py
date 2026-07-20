@@ -135,7 +135,9 @@ def build_human_explanation(
         f"Model lean: BUY {prob_buy * 100:.0f}%, "
         f"SELL {prob_sell * 100:.0f}%, HOLD {prob_hold * 100:.0f}%."
     )
-    checks_txt = f"{confirmation_score} of 6 technical checks currently agree."
+    side = str(raw_decision or "").upper()
+    side_word = "BUY-side" if side == "BUY" else "SELL-side" if side == "SELL" else "technical"
+    checks_txt = f"{confirmation_score} of 6 {side_word} technical checks currently agree."
 
     if final_decision == "HOLD" and sentiment_impact == "buy_blocked_by_risk":
         ev = risk_events[0] if risk_events else "a high-risk news or market event"
@@ -148,14 +150,30 @@ def build_human_explanation(
         )
 
     if final_decision == "HOLD":
-        why = (
-            "the model itself sees no clear next-hour move"
-            if raw_decision == "HOLD"
-            else (
-                f"the model leaned {raw_decision}, but not enough technical checks "
-                f"agreed ({checks_txt})"
+        reasons = confirmation_reasons or []
+        if raw_decision == "HOLD":
+            why = (
+                f"the model itself sees no clear next-hour move "
+                f"(HOLD is the top class at {prob_hold * 100:.0f}% — "
+                f"BUY {prob_buy * 100:.0f}%, SELL {prob_sell * 100:.0f}%). "
+                f"Bullish evidence groups or {confirmation_score}/6 snapshot checks "
+                f"are context only; they do not unlock BUY while outlook is HOLD"
             )
-        )
+        elif "low_buy_confidence" in reasons or "low_sell_confidence" in reasons:
+            why = (
+                f"the model leaned {raw_decision}, but its {raw_decision} "
+                f"probability was below the action threshold"
+            )
+        elif "insufficient_confirmations" in reasons:
+            why = (
+                f"the model leaned {raw_decision}, but not enough {side_word} "
+                f"technical checks agreed ({checks_txt})"
+            )
+        else:
+            why = (
+                f"the model leaned {raw_decision}, but filters did not confirm "
+                f"a clear action ({checks_txt})"
+            )
         return (
             f"Suggested action: HOLD — {why}. "
             f"{probs_txt} News mood: {news_label}. "

@@ -46,6 +46,14 @@ NEWS_FEEDS = [
     "https://bitcoinmagazine.com/.rss/full/",
 ]
 
+# CoinGecko /news API is Pro-only; we also pull their free curated homepage feed.
+COINGECKO_HOME = "https://www.coingecko.com/"
+COINGECKO_API_NEWS = "https://api.coingecko.com/api/v3/news"
+_CG_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+
 MAX_AGE_HOURS = 48.0
 STALE_FLOOR_WEIGHT = 0.05
 
@@ -227,8 +235,114 @@ def score_headlines(
     }
 
 
+def fetch_coingecko_articles(timeout: float = 12.0) -> List[Dict[str, Any]]:
+    """
+    CoinGecko-curated headlines, merged into the same news pool as RSS.
+
+    Prefer official /news API when COINGECKO_API_KEY is set (Pro/Analyst).
+    Otherwise scrape the free homepage "Latest Crypto News" strip.
+    """
+    import os
+    import re
+    from html import unescape
+
+    import requests
+
+    articles: List[Dict[str, Any]] = []
+    api_key = (os.environ.get("COINGECKO_API_KEY") or "").strip()
+
+    if api_key:
+        try:
+            resp = requests.get(
+                COINGECKO_API_NEWS,
+                params={"page": 1, "per_page": 20, "language": "en", "type": "news"},
+                headers={
+                    "User-Agent": _CG_UA,
+                    "x-cg-pro-api-key": api_key,
+                    "x-cg-demo-api-key": api_key,
+                },
+                timeout=timeout,
+            )
+            if resp.ok:
+                payload = resp.json()
+                rows = payload if isinstance(payload, list) else (
+                    payload.get("data") or payload.get("news") or []
+                )
+                for row in rows:
+                    title = (row.get("title") or "").strip()
+                    if not title:
+                        continue
+                    pub = row.get("posted_at") or row.get("updated_at")
+                    published_at = None
+                    if isinstance(pub, str):
+                        try:
+                            published_at = datetime.fromisoformat(
+                                pub.replace("Z", "+00:00")
+                            )
+                        except Exception:
+                            published_at = None
+                    articles.append(
+                        {
+                            "title": title,
+                            "summary": (row.get("description") or "")[:500],
+                            "source": "coingecko.com",
+                            "link": row.get("url") or row.get("link"),
+                            "published_at": published_at,
+                        }
+                    )
+                if articles:
+                    return articles
+        except Exception:
+            pass
+
+    # Free fallback: curated strip on CoinGecko homepage
+    try:
+        resp = requests.get(
+            COINGECKO_HOME,
+            headers={"User-Agent": _CG_UA, "Accept-Language": "en-US,en;q=0.9"},
+            timeout=timeout,
+        )
+        resp.raise_for_status()
+        html = resp.content.decode("utf-8", errors="replace")
+        idx = html.lower().find("latest crypto news")
+        chunk = html[idx : idx + 40000] if idx >= 0 else html
+        pairs = re.findall(
+            r'href="(https://(?!www\.coingecko\.com)[^"]+)"[^>]*>'
+            r"\s*(?:<[^>]+>\s*)*([^<]{20,180})\s*<",
+            chunk,
+            flags=re.I | re.S,
+        )
+        seen = set()
+        now = datetime.now(timezone.utc)
+        for link, raw_title in pairs:
+            title = unescape(re.sub(r"\s+", " ", raw_title)).strip()
+            if not title or title.lower() in ("see more news", "see more articles"):
+                continue
+            key = title.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            host = urlparse(link).netloc or "coingecko.com"
+            articles.append(
+                {
+                    "title": title,
+                    "summary": "",
+                    "source": f"coingecko.com/{host}",
+                    "link": link,
+                    # Homepage strip is live; treat as recent so recency weight applies
+                    "published_at": now,
+                }
+            )
+            if len(articles) >= 15:
+                break
+    except Exception:
+        return articles
+
+    return articles
+
+
 def fetch_rss_articles(timeout_hint: float = 8.0) -> List[Dict[str, Any]]:
-    """Fetch raw articles from configured RSS feeds (best-effort)."""
+    """Fetch raw articles from RSS feeds + CoinGecko curated news (best-effort)."""
     articles: List[Dict[str, Any]] = []
     for feed_url in NEWS_FEEDS:
         try:
@@ -250,6 +364,12 @@ def fetch_rss_articles(timeout_hint: float = 8.0) -> List[Dict[str, Any]]:
                 )
         except Exception:
             continue
+
+    try:
+        articles.extend(fetch_coingecko_articles(timeout=max(8.0, float(timeout_hint))))
+    except Exception:
+        pass
+
     return articles
 
 

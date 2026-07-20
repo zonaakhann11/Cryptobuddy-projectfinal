@@ -20,6 +20,10 @@ REASON_PLAIN = {
         "The model leans BUY, but its BUY probability is too weak "
         "to recommend acting — suggestion stays HOLD."
     ),
+    "low_sell_confidence": (
+        "The model leans SELL, but its SELL probability is too weak "
+        "to recommend acting — suggestion stays HOLD."
+    ),
     "low_model_confidence": (
         "The model is not confident enough in a direction, "
         "so the suggestion stays HOLD."
@@ -39,12 +43,23 @@ REASON_PLAIN = {
 }
 
 CONFIRMATION_LABELS = {
+    # BUY-side (and HOLD lean market snapshot)
     "momentum": "Short-term momentum agrees",
+    "momentum_agree": "Short-term momentum agrees",
     "rsi_healthy": "RSI in a healthy zone",
     "rsi_rising": "RSI is rising",
     "macd": "MACD supports upside",
+    "macd_bullish": "MACD supports upside",
     "volume": "Trading volume is active",
+    "volume_up": "Trading volume is active",
     "price_volume": "Price and volume move together",
+    "vol_price_momentum": "Price and volume move together",
+    # SELL-side — same gates as Strategy B in realtime_predict
+    "momentum_bearish": "Short-term momentum is weak",
+    "rsi_weak": "RSI in a weak zone",
+    "rsi_falling": "RSI is falling",
+    "macd_bearish": "MACD supports downside",
+    "vol_price_momentum_neg": "Price and volume move lower together",
 }
 
 GROUP_PLAIN = {

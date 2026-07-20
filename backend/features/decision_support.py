@@ -149,6 +149,7 @@ def build_what_would_change(
     thr: Dict[str, Any],
     is_high_risk: bool,
     risk_level: str,
+    grouped_indicators: Optional[List[dict]] = None,
 ) -> Dict[str, Any]:
     buy_prob_need = float(thr.get("buy_prob", 0.40))
     sell_prob_need = float(thr.get("sell_prob", 0.33))
@@ -157,47 +158,128 @@ def build_what_would_change(
 
     failed = [c.get("label") for c in (confirmation_checks or []) if c.get("status") == "Failed"]
     passed = [c.get("label") for c in (confirmation_checks or []) if c.get("status") == "Passed"]
+    lean = str(raw_decision or "").upper()
+    groups = grouped_indicators or []
+
+    def _group(name: str) -> Dict[str, Any]:
+        for g in groups:
+            if str(g.get("group", "")).lower() == name.lower():
+                return g
+        return {}
+
+    def _watching(name: str) -> Optional[str]:
+        w = (_group(name).get("strongest_conflict") or "").strip().rstrip(".")
+        return w or None
+
+    def _helping(name: str) -> Optional[str]:
+        h = (_group(name).get("strongest_support") or "").strip().rstrip(".")
+        return h or None
 
     to_buy: List[str] = []
     to_sell: List[str] = []
     invalidate: List[str] = []
 
     if final_decision == "HOLD":
-        if prob_buy < buy_prob_need:
+        if lean == "HOLD":
+            headline = (
+                "Suggested action stays HOLD because the model outlook is HOLD — "
+                "bullish charts alone do not unlock BUY or SELL."
+            )
             to_buy.append(
-                f"BUY probability rises to at least {buy_prob_need * 100:.0f}% "
-                f"(now {prob_buy * 100:.0f}%)."
+                f"Next-hour model outlook must flip to BUY "
+                f"(now HOLD wins at {prob_hold * 100:.0f}%; BUY is only {prob_buy * 100:.0f}%)."
+            )
+            to_buy.append(
+                f"Then BUY probability must clear {buy_prob_need * 100:.0f}% "
+                f"and at least {buy_conf_need}/6 BUY checks must still agree."
+            )
+            vol_watch = _watching("Volatility")
+            mom_watch = _watching("Momentum")
+            ctx_watch = _watching("Market Context")
+            vol_status = str(_group("Volatility").get("status") or "").lower()
+            if vol_watch or vol_status in ("high risk", "bearish"):
+                to_buy.append(
+                    f"Volatility cools — currently watching: "
+                    f"{vol_watch or 'jumpy / high-volatility regime'}."
+                )
+            if mom_watch:
+                to_buy.append(f"Momentum confirmation improves: {mom_watch}.")
+            if ctx_watch:
+                to_buy.append(f"Broader market helps: {ctx_watch}.")
+            if is_high_risk:
+                to_buy.append(
+                    f"Risk must cool from {risk_level} (high-risk blocks BUY even if lean flips)."
+                )
+
+            to_sell.append(
+                f"Next-hour model outlook must flip to SELL "
+                f"(now HOLD wins at {prob_hold * 100:.0f}%; SELL is {prob_sell * 100:.0f}%)."
+            )
+            to_sell.append(
+                f"Then SELL probability must clear {sell_prob_need * 100:.0f}% "
+                f"and at least {sell_conf_need}/6 SELL checks must agree."
+            )
+            trend_help = _helping("Trend")
+            if trend_help and str(_group("Trend").get("status") or "").lower() == "bullish":
+                to_sell.append(
+                    f"Trend would need to weaken (now bullish — {trend_help})."
+                )
+            mom_help = _helping("Momentum")
+            if mom_help and str(_group("Momentum").get("status") or "").lower() == "bullish":
+                to_sell.append(
+                    f"Momentum would need to roll over (now bullish — {mom_help})."
+                )
+        elif lean == "BUY":
+            headline = (
+                "Model leaned BUY, but filters kept HOLD — "
+                "here is what would unlock BUY."
+            )
+            if prob_buy < buy_prob_need:
+                to_buy.append(
+                    f"BUY probability rises to >= {buy_prob_need * 100:.0f}% "
+                    f"(now {prob_buy * 100:.0f}%)."
+                )
+            if confirmation_score < buy_conf_need:
+                to_buy.append(
+                    f"At least {buy_conf_need}/6 BUY-side checks agree "
+                    f"(now {confirmation_score}/6)."
+                )
+            if failed:
+                to_buy.append(f"Turn these red checks green: {', '.join(failed[:3])}.")
+            if is_high_risk:
+                to_buy.append(f"Risk cools from {risk_level}.")
+            vol_watch = _watching("Volatility")
+            if vol_watch:
+                to_buy.append(f"Volatility: {vol_watch}.")
+            to_sell.append(
+                f"A SELL path needs the model to lean SELL (>= {sell_prob_need * 100:.0f}%) "
+                f"with >= {sell_conf_need} SELL-side checks."
             )
         else:
-            to_buy.append(f"BUY probability already meets {buy_prob_need * 100:.0f}%.")
-        if confirmation_score < buy_conf_need:
+            headline = (
+                "Model leaned SELL, but filters kept HOLD — "
+                "here is what would unlock SELL."
+            )
+            if prob_sell < sell_prob_need:
+                to_sell.append(
+                    f"SELL probability rises to >= {sell_prob_need * 100:.0f}% "
+                    f"(now {prob_sell * 100:.0f}%)."
+                )
+            if confirmation_score < sell_conf_need:
+                to_sell.append(
+                    f"At least {sell_conf_need}/6 SELL-side checks agree "
+                    f"(now {confirmation_score}/6)."
+                )
+            if failed:
+                to_sell.append(f"Turn these red checks green: {', '.join(failed[:3])}.")
+            mom_help = _helping("Momentum")
+            if mom_help:
+                to_sell.append(f"Bullish leftovers still in the way: {mom_help}.")
             to_buy.append(
-                f"At least {buy_conf_need} technical checks agree "
-                f"(now {confirmation_score}/6)."
+                f"A BUY path needs the model to lean BUY (>= {buy_prob_need * 100:.0f}%) "
+                f"with >= {buy_conf_need} BUY-side checks"
+                + (" and no high-risk block." if is_high_risk else ".")
             )
-        if failed:
-            to_buy.append(f"Improve failing checks such as: {', '.join(failed[:3])}.")
-        if is_high_risk:
-            to_buy.append(f"Risk must cool from {risk_level} (BUY is blocked while high-risk).")
-        if raw_decision == "HOLD":
-            to_buy.append("Model outlook itself would need to lean BUY (currently HOLD).")
-
-        if prob_sell < sell_prob_need:
-            to_sell.append(
-                f"SELL probability rises to at least {sell_prob_need * 100:.0f}% "
-                f"(now {prob_sell * 100:.0f}%)."
-            )
-        else:
-            to_sell.append(f"SELL probability already meets {sell_prob_need * 100:.0f}%.")
-        if confirmation_score < sell_conf_need:
-            to_sell.append(
-                f"At least {sell_conf_need} technical checks agree for SELL "
-                f"(now {confirmation_score}/6)."
-            )
-        if raw_decision == "HOLD":
-            to_sell.append("Model outlook itself would need to lean SELL (currently HOLD).")
-
-        headline = "HOLD means evidence is incomplete — here is what would unlock a direction."
     elif final_decision == "BUY":
         headline = "BUY is active — here is what would invalidate it."
         invalidate.append(
@@ -210,12 +292,15 @@ def build_what_would_change(
         invalidate.append("A high-risk news/event flag appearing.")
         if passed:
             invalidate.append(f"Key supports fading: {', '.join(passed[:2])}.")
+        vol_watch = _watching("Volatility")
+        if vol_watch:
+            invalidate.append(f"Volatility flare-up: {vol_watch}.")
         to_buy = ["Already suggesting BUY — watch invalidation conditions."]
         to_sell = [
-            f"A flip would need SELL lean ≥ {sell_prob_need * 100:.0f}% and "
-            f"≥ {sell_conf_need} agreeing checks."
+            f"A flip would need SELL lean >= {sell_prob_need * 100:.0f}% and "
+            f">= {sell_conf_need} agreeing SELL-side checks."
         ]
-    else:  # SELL
+    else:
         headline = "SELL is active — here is what would invalidate it."
         invalidate.append(
             f"SELL probability falling below {sell_prob_need * 100:.0f}% "
@@ -228,8 +313,8 @@ def build_what_would_change(
             invalidate.append(f"Key supports fading: {', '.join(passed[:2])}.")
         to_sell = ["Already suggesting SELL — watch invalidation conditions."]
         to_buy = [
-            f"A flip would need BUY lean ≥ {buy_prob_need * 100:.0f}%, "
-            f"≥ {buy_conf_need} checks, and no high-risk block."
+            f"A flip would need BUY lean >= {buy_prob_need * 100:.0f}%, "
+            f">= {buy_conf_need} BUY-side checks, and no high-risk block."
         ]
 
     return {
@@ -252,6 +337,7 @@ def build_what_would_change(
             "raw_decision": raw_decision,
         },
     }
+
 
 
 def build_signal_snapshot(
@@ -392,6 +478,354 @@ def build_change_since_last(
     }
 
 
+def build_buddy_take(
+    *,
+    latest_row,
+    symbol: str,
+    raw_decision: str,
+    final_decision: str,
+    prob_buy: float,
+    prob_sell: float,
+    prob_hold: float,
+    confirmation_score: int,
+    confirmation_checks: List[dict],
+    confirmation_reasons: List[str],
+    thr: Dict[str, Any],
+    grouped_indicators: List[dict],
+    news_label: str,
+    fg_label: str,
+    fg_value: int,
+    risk_level: str,
+    risk_events: List[str],
+    is_high_risk: bool,
+    price_zone: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Plain-English sum-up for someone who doesn't know trading jargon.
+    Gives CryptoBuddy's opinion + why, plus an own-risk reminder.
+    """
+    buy_p = int(round(float(prob_buy) * 100))
+    sell_p = int(round(float(prob_sell) * 100))
+    hold_p = int(round(float(prob_hold) * 100))
+    lean = str(raw_decision or "HOLD").upper()
+    action = str(final_decision or "HOLD").upper()
+    reasons = list(confirmation_reasons or [])
+    groups = {str(g.get("group")): g for g in (grouped_indicators or [])}
+
+    def gstat(name: str) -> str:
+        return str((groups.get(name) or {}).get("status") or "")
+
+    # --- market story in everyday words (from raw features, not jargon labels) ---
+    market_bits: List[str] = []
+    rsi = _f(latest_row, "rsi_14", 50)
+    slope = _f(latest_row, "rsi_slope", 0)
+    hist = _f(latest_row, "macd_histogram", 0)
+    vz = _f(latest_row, "volume_zscore", 0)
+    vpm = _f(latest_row, "volume_price_momentum", 0)
+    p20 = _f(latest_row, "price_vs_ema20", 0)
+
+    if vz > 0.3 and vpm > 0:
+        market_bits.append(
+            "plenty of traders seem to be joining the move, and price and activity are moving the same way"
+        )
+    elif vz > 0.3 and vpm < 0:
+        market_bits.append(
+            "trading activity is busy, but more on the way down than up"
+        )
+    elif vz <= 0.3:
+        market_bits.append(
+            "the move looks a bit thin — not many traders are really jumping in yet"
+        )
+
+    if rsi >= 70:
+        market_bits.append(
+            "price has already been pushed quite hard upward, so chasing it higher looks stretched"
+        )
+    elif rsi <= 30:
+        market_bits.append(
+            "price looks washed out / sold hard already, which can mean sellers are tired"
+        )
+    elif 45 < rsi < 70 and slope > 0:
+        market_bits.append(
+            "price hasn't been stretched too far yet, and the short-term push still looks alive"
+        )
+    elif slope < 0:
+        market_bits.append(
+            "the short-term upward push is cooling off"
+        )
+    else:
+        market_bits.append(
+            "price looks fairly balanced — not clearly overstretched either way"
+        )
+
+    if hist > 0 and p20 > 0:
+        market_bits.append(
+            "recent strength is still pointing up and price is sitting above its short average path"
+        )
+    elif hist < 0 and p20 < 0:
+        market_bits.append(
+            "recent strength is pointing down and price is under its short average path"
+        )
+    elif hist > 0:
+        market_bits.append("short-term strength still leans a little upward")
+    elif hist < 0:
+        market_bits.append("short-term strength still leans a little downward")
+
+    if gstat("Volatility") in ("High Risk", "Bearish"):
+        market_bits.append(
+            "the market feels jumpy right now, which makes sudden swings more likely"
+        )
+
+    if gstat("Market Context") == "Bullish":
+        market_bits.append("the broader crypto backdrop looks okay for this coin")
+    elif gstat("Market Context") == "Bearish":
+        market_bits.append("the broader crypto backdrop looks a bit weak")
+
+    market_story = ""
+    if market_bits:
+        bits = market_bits[:4]
+        if len(bits) == 1:
+            market_story = bits[0].capitalize() + "."
+        elif len(bits) == 2:
+            market_story = bits[0].capitalize() + ", and " + bits[1] + "."
+        else:
+            market_story = (
+                bits[0].capitalize()
+                + ", "
+                + ", ".join(bits[1:-1])
+                + ", and "
+                + bits[-1]
+                + "."
+            )
+    # --- news / mood ---
+    mood_bits: List[str] = []
+    nl = (news_label or "Neutral").lower()
+    if "bull" in nl:
+        mood_bits.append("Headlines lean a bit positive")
+    elif "bear" in nl:
+        mood_bits.append("Headlines lean a bit cautious")
+    else:
+        mood_bits.append("Headlines look mostly mixed / quiet")
+
+    fg = (fg_label or "Neutral").lower()
+    if "fear" in fg:
+        mood_bits.append(
+            f"Overall market mood is fearful (fear/greed around {int(fg_value)})"
+        )
+    elif "greed" in fg:
+        mood_bits.append(
+            f"Overall market mood is greedy (fear/greed around {int(fg_value)})"
+        )
+    else:
+        mood_bits.append(
+            f"Overall market mood is fairly neutral (fear/greed around {int(fg_value)})"
+        )
+
+    if is_high_risk or risk_level in ("High", "Critical"):
+        ev = (risk_events or ["a worrying news flag"])[0]
+        mood_bits.append(f"We also flagged extra risk ({risk_level}): {ev}")
+    elif risk_level == "Medium":
+        mood_bits.append("Risk looks medium — nothing extreme, but not risk-free")
+    else:
+        mood_bits.append("We did not see a high-risk news alarm")
+
+    mood_story = ". ".join(mood_bits) + "."
+
+    # --- price zone (simple) ---
+    zone_story = ""
+    pz = price_zone or {}
+    support = pz.get("support")
+    resistance = pz.get("resistance")
+    zone_parts = []
+    try:
+        if support is not None:
+            zone_parts.append(f"a nearby support area around ${float(support):,.2f}")
+        if resistance is not None:
+            zone_parts.append(f"resistance around ${float(resistance):,.2f}")
+    except Exception:
+        zone_parts = []
+    if zone_parts:
+        zone_story = "On the chart, price is near " + " and ".join(zone_parts) + "."
+
+    # --- our opinion / why this suggestion ---
+    buy_need = int(round(float(thr.get("buy_prob", 0.40)) * 100))
+    sell_need = int(round(float(thr.get("sell_prob", 0.33)) * 100))
+    buy_conf_need = int(thr.get("buy_confirms", 2))
+    sell_conf_need = int(thr.get("sell_confirms", 3))
+    failed_raw = [
+        c.get("label")
+        for c in (confirmation_checks or [])
+        if c.get("status") == "Failed"
+    ]
+
+    def _plain_fail(label: str) -> str:
+        t = str(label or "").lower()
+        if "volume" in t and "lower" in t:
+            return "price and trading activity are not moving down together"
+        if "volume" in t or "trading" in t:
+            return "not enough trading activity yet"
+        if "momentum" in t and "weak" in t:
+            return "short-term strength is not clearly weak"
+        if "momentum" in t:
+            return "short-term strength is not clearly lined up"
+        if "rsi" in t and "falling" in t:
+            return "the short-term push is not clearly fading"
+        if "rsi" in t and "rising" in t:
+            return "the short-term push is not clearly rising"
+        if "rsi" in t and "weak" in t:
+            return "price is not clearly in a soft/weak zone"
+        if "rsi" in t and "healthy" in t:
+            return "price is not in a comfortable mid-range"
+        if "macd" in t and "down" in t:
+            return "downside strength is not confirmed"
+        if "macd" in t:
+            return "upside strength is not confirmed"
+        if "price and volume" in t or "move together" in t:
+            return "price and activity are not clearly moving together"
+        return "one of the market checks still disagrees"
+
+    failed_plain = [_plain_fail(x) for x in failed_raw[:3]]
+
+    opinion_parts: List[str] = []
+    if action == "HOLD" and lean == "HOLD":
+        opinion_parts.append(
+            f"Our take: sit this one out (HOLD). The model itself does not see a clear "
+            f"next-hour edge — it puts about {hold_p}% on sitting out, {buy_p}% on buying, "
+            f"and {sell_p}% on selling."
+        )
+        if vz <= 0.3:
+            opinion_parts.append(
+                "Even where the chart looks okay, the move does not look busy enough yet "
+                "for us to push a buy or sell call."
+            )
+        opinion_parts.append(
+            f"For a BUY call we usually want the model closer to {buy_need}%+ on buy "
+            f"and clearer agreement from the market checks; for SELL, about {sell_need}%+ "
+            f"on sell with stronger chart agreement."
+        )
+    elif action == "HOLD" and lean == "BUY":
+        opinion_parts.append(
+            f"Our take: still HOLD for now. The model leaned BUY (~{buy_p}%), but we did "
+            f"not get enough agreement from the market checks "
+            f"({confirmation_score}/6 passed; we like at least {buy_conf_need})."
+        )
+        if vz <= 0.3:
+            opinion_parts.append(
+                "In plain words: it is not busy enough / not confirmed enough to recommend buying yet."
+            )
+        if failed_plain:
+            opinion_parts.append(
+                "What is still missing: " + "; ".join(failed_plain) + "."
+            )
+        if is_high_risk or "risk_override" in reasons:
+            opinion_parts.append(
+                "Also, risk context made us extra careful about recommending a buy."
+            )
+    elif action == "HOLD" and lean == "SELL":
+        opinion_parts.append(
+            f"Our take: still HOLD for now. The model leaned SELL (~{sell_p}%), but not "
+            f"enough chart checks agreed ({confirmation_score}/6; we like at least "
+            f"{sell_conf_need} for a sell call)."
+        )
+        if failed_plain:
+            opinion_parts.append(
+                "What is still missing: " + "; ".join(failed_plain) + "."
+            )
+    elif action == "BUY":
+        opinion_parts.append(
+            f"Our take: a cautious BUY lean. The model puts about {buy_p}% on buy, "
+            f"and {confirmation_score}/6 market checks agreed enough for us to show that suggestion."
+        )
+        if vz > 0.3:
+            opinion_parts.append(
+                "Activity looks supportive enough that the upward idea is not empty."
+            )
+    else:  # SELL
+        opinion_parts.append(
+            f"Our take: a cautious SELL lean. The model puts about {sell_p}% on sell, "
+            f"and {confirmation_score}/6 market checks agreed enough for us to show that suggestion."
+        )
+
+    # forward-looking soft opinion
+    forward = ""
+    if action == "HOLD":
+        if vz <= 0.3 and hist >= 0 and rsi < 70:
+            forward = (
+                "If more traders start joining and the upward push stays healthy — "
+                "without price getting stretched — a clearer buy case could form later. "
+                "If strength fades and selling picks up, a sell case could form instead."
+            )
+        elif hist < 0 or slope < 0:
+            forward = (
+                "If selling keeps building and the short-term push stays weak, "
+                "a clearer sit-out or sell case becomes more believable. "
+                "A bounce with real participation would be needed before we'd lean buy."
+            )
+        else:
+            forward = (
+                "We'd want a clearer next-hour lean from the model, plus stronger "
+                "agreement from activity and short-term strength, before calling buy or sell."
+            )
+    elif action == "BUY":
+        forward = (
+            "That buy lean would look weaker if activity dries up, the short-term push "
+            "fades, or scary news shows up."
+        )
+    else:
+        forward = (
+            "That sell lean would look weaker if buyers return with real activity "
+            "and short-term strength turns back up."
+        )
+
+    disclaimer = (
+        "This is decision support from CryptoBuddy — not financial advice and not an order "
+        "to trade. Crypto is risky; if you act, you do so on your own judgment and your own risk."
+    )
+
+    paragraphs = [
+        p for p in [
+            market_story,
+            mood_story,
+            zone_story,
+            " ".join(opinion_parts),
+            forward,
+            disclaimer,
+        ]
+        if p
+    ]
+    full = " ".join(paragraphs)
+
+    # Short line for history cards
+    if action == "HOLD" and lean == "HOLD":
+        short = (
+            f"We said HOLD — no clear next-hour edge (buy {buy_p}% / sell {sell_p}% / hold {hold_p}%). "
+            + (
+                "Move looks thin on activity."
+                if vz <= 0.3
+                else "Waiting for a clearer setup."
+            )
+        )
+    elif action == "HOLD":
+        short = (
+            f"Model leaned {lean}, we still said HOLD — not enough market agreement yet "
+            f"({confirmation_score}/6)."
+        )
+    else:
+        short = (
+            f"We suggested {action} — model ~{max(buy_p, sell_p)}% on that side with "
+            f"{confirmation_score}/6 checks agreeing. Trade only if you accept the risk."
+        )
+
+    return {
+        "title": "Buddy's take",
+        "summary": full,
+        "short": short,
+        "action": action,
+        "model_lean": lean,
+        "paragraphs": paragraphs,
+    }
+
+
 def build_signal_history(records: List[dict], symbol: str, limit: int = 5) -> List[dict]:
     rows = [r for r in records if str(r.get("symbol", "")).upper() == str(symbol).upper()]
     rows = rows[-limit:]
@@ -404,6 +838,7 @@ def build_signal_history(records: List[dict], symbol: str, limit: int = 5) -> Li
                 "final_decision": r.get("final_decision") or r.get("decision"),
                 "confidence": r.get("confidence"),
                 "confirmation_score": r.get("confirmation_score"),
+                "buddy_take_short": r.get("buddy_take_short") or r.get("short_take"),
             }
         )
     return out

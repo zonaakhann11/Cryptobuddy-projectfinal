@@ -34,6 +34,7 @@ from features.decision_support import (
     build_signal_history,
     build_signal_snapshot,
     build_what_would_change,
+    build_buddy_take,
 )
 
 try:
@@ -317,8 +318,8 @@ def _badge_from_reasons(
 def _build_confirmation_checks(raw_decision: str, latest_row) -> list:
     """Six technical checks with Passed / Failed / Not Available for the UI.
 
-    Labels match the dashboard chip names. Status uses the same thresholds as
-    Strategy B BUY confirmations so Passed/Failed stay interpretable.
+    Side matches the model lean: BUY/HOLD use bullish Strategy B gates;
+    SELL uses the bearish Strategy B gates that actually filter SELL→HOLD.
     """
     def _num(key, default=None):
         try:
@@ -341,15 +342,34 @@ def _build_confirmation_checks(raw_decision: str, latest_row) -> list:
             return "Not Available"
         return "Passed" if ok_fn(value) else "Failed"
 
-    _ = raw_decision  # reserved for future side-specific chips
-    specs = [
-        ("momentum", "Momentum Agreement", status(momentum, lambda m: m >= 0.6)),
-        ("rsi_healthy", "RSI Healthy", status(rsi, lambda r: 45 < r < 75)),
-        ("rsi_rising", "RSI Rising", status(rsi_slope, lambda s: s > 0)),
-        ("macd", "MACD", status(macd_hist, lambda h: h > 0)),
-        ("volume", "Volume", status(vol_z, lambda z: z > 0.3)),
-        ("price_volume", "Price-Volume Momentum", status(vpm, lambda v: v > 0)),
-    ]
+    side = str(raw_decision or "").upper()
+    if side == "SELL":
+        specs = [
+            ("momentum_bearish", "Momentum weak", status(momentum, lambda m: m <= 0.4)),
+            ("rsi_weak", "RSI weak", status(rsi, lambda r: 20 < r < 55)),
+            ("rsi_falling", "RSI falling", status(rsi_slope, lambda s: s < 0)),
+            ("macd_bearish", "MACD bearish", status(macd_hist, lambda h: h < 0)),
+            ("volume_up", "Volume active", status(vol_z, lambda z: z > 0.3)),
+            (
+                "vol_price_momentum_neg",
+                "Price-volume down",
+                status(vpm, lambda v: v < 0),
+            ),
+        ]
+    else:
+        # BUY lean, or HOLD lean as a bullish market snapshot
+        specs = [
+            ("momentum_agree", "Momentum Agreement", status(momentum, lambda m: m >= 0.6)),
+            ("rsi_healthy", "RSI Healthy", status(rsi, lambda r: 45 < r < 75)),
+            ("rsi_rising", "RSI Rising", status(rsi_slope, lambda s: s > 0)),
+            ("macd_bullish", "MACD", status(macd_hist, lambda h: h > 0)),
+            ("volume_up", "Volume", status(vol_z, lambda z: z > 0.3)),
+            (
+                "vol_price_momentum",
+                "Price-Volume Momentum",
+                status(vpm, lambda v: v > 0),
+            ),
+        ]
     return [
         {"id": cid, "label": confirmation_label(cid, fallback), "status": st}
         for cid, fallback, st in specs
@@ -365,6 +385,8 @@ def _rejection_reason(final_decision, raw_decision, reasons, is_high_risk) -> st
         return "insufficient_confirmations"
     if "low_buy_confidence" in reasons:
         return "low_buy_confidence"
+    if "low_sell_confidence" in reasons:
+        return "low_sell_confidence"
     for r in reasons:
         if r.startswith("low_model_confidence"):
             return "low_model_confidence"
@@ -632,10 +654,9 @@ def predict(symbol: str = "BTCUSDT", model_version: str = "v1") -> dict:
 
     passed_checks = [c["label"] for c in confirmation_checks if c.get("status") == "Passed"]
     failed_checks = [c["label"] for c in confirmation_checks if c.get("status") == "Failed"]
-    # Display score always reflects chip Pass count (policy score kept in confirmation_score_policy)
+    # Policy score = filter count; display score always matches visible chip passes
     confirmation_score_policy = confirmation_score
     confirmation_score = len(passed_checks)
-
     top_articles = (news_pack.get("articles") or [])[:3]
     human_explanation = ""
     if build_human_explanation is not None:
@@ -677,21 +698,6 @@ def predict(symbol: str = "BTCUSDT", model_version: str = "v1") -> dict:
     change_since = build_change_since_last(snapshot, previous_snap)
     prior_records = _read_signal_log()
 
-    log_entry = {
-        **snapshot,
-        "decision": final_decision,
-        "strategy_badge": strategy_badge,
-        "reasons": confirmation_reasons,
-        "entry_close": round(current_close, 6),
-        "model_version": model_version,
-        "status": "open",
-        "outcome": None,
-        "pnl": None,
-        "close_price": None,
-        "closed_at": None,
-    }
-    _append_signal_log_entry(log_entry)
-
     what_would_change = build_what_would_change(
         raw_decision=raw_decision,
         final_decision=final_decision,
@@ -703,8 +709,47 @@ def predict(symbol: str = "BTCUSDT", model_version: str = "v1") -> dict:
         thr=thr,
         is_high_risk=is_high_risk,
         risk_level=risk_level,
+        grouped_indicators=grouped_pack.get("grouped_indicators", []),
     )
     price_zone = build_price_zone_context(latest_row)
+    buddy_take = build_buddy_take(
+        latest_row=latest_row,
+        symbol=symbol,
+        raw_decision=raw_decision,
+        final_decision=final_decision,
+        prob_buy=float(prob_buy),
+        prob_sell=float(prob_sell),
+        prob_hold=float(prob_hold),
+        confirmation_score=confirmation_score,
+        confirmation_checks=confirmation_checks,
+        confirmation_reasons=confirmation_reasons,
+        thr=thr,
+        grouped_indicators=grouped_pack.get("grouped_indicators", []),
+        news_label=news_sentiment_label,
+        fg_label=fear_greed_label,
+        fg_value=fear_greed_value,
+        risk_level=risk_level,
+        risk_events=risk_events,
+        is_high_risk=is_high_risk,
+        price_zone=price_zone,
+    )
+
+    log_entry = {
+        **snapshot,
+        "decision": final_decision,
+        "strategy_badge": strategy_badge,
+        "reasons": confirmation_reasons,
+        "entry_close": round(current_close, 6),
+        "model_version": model_version,
+        "buddy_take_short": buddy_take.get("short"),
+        "status": "open",
+        "outcome": None,
+        "pnl": None,
+        "close_price": None,
+        "closed_at": None,
+    }
+    _append_signal_log_entry(log_entry)
+
     news_takeaway = build_news_takeaway(
         news_sentiment_label,
         news_sentiment,
@@ -715,7 +760,6 @@ def predict(symbol: str = "BTCUSDT", model_version: str = "v1") -> dict:
     signal_history = build_signal_history(
         prior_records + [log_entry], symbol=symbol, limit=5
     )
-
     result = {
         "asset": symbol,
         "symbol": symbol,
@@ -766,6 +810,8 @@ def predict(symbol: str = "BTCUSDT", model_version: str = "v1") -> dict:
         "sentiment_alignment": sentiment_alignment,
         "sentiment_impact": sentiment_impact,
         "human_readable_explanation": human_explanation,
+        "buddy_take": buddy_take,
+        "buddy_take_summary": buddy_take.get("summary"),
         "decision_reason": plain_decision_reason(rejection_reason),
         "decision_reason_code": rejection_reason,
         "top_headlines": [
